@@ -1,301 +1,204 @@
-# Лабораторная работа №3
-
-Условие лабораторной работы: https://github.com/tp-labs/lab03
+# Лабораторная работа №4
 
 ## Цель работы
 
-Получить практические навыки работы с системой сборки CMake: создание статических библиотек, настройка зависимостей между ними и сборка приложений.
+Настроить систему непрерывной интеграции (CI) для проекта, разработанного в лабораторной работе №3.
 
-Репозиторий с выполненной лабораторной работой:
+Необходимо организовать автоматическую сборку проекта:
 
-https://github.com/Shohiii/lab03
+* в Linux с компилятором GCC;
+* в Linux с компилятором Clang;
+* в Windows с компилятором MSVC.
 
-## Исходная структура проекта
+Все варианты сборки должны быть описаны в одном файле конфигурации CI.
 
-Была сохранена исходная структура проекта:
+## Исходный проект
+
+В качестве основы используется проект из лабораторной работы №3.
+
+Проект содержит следующие библиотеки и приложения:
+
+* `formatter_lib`;
+* `formatter_ex_lib`;
+* `solver_lib`;
+* `hello_world_application`;
+* `solver_application`.
+
+Структура проекта:
 
 ```text
 .
+├── .github
+│   └── workflows
+│       └── ci.yml
+├── formatter_lib
+├── formatter_ex_lib
+├── hello_world_application
+├── solver_application
+├── solver_lib
 ├── CMakeLists.txt
 ├── LICENSE
-├── README.md
-├── formatter_ex_lib
-│   ├── CMakeLists.txt
-│   ├── formatter_ex.cpp
-│   └── formatter_ex.h
-├── formatter_lib
-│   ├── CMakeLists.txt
-│   ├── formatter.cpp
-│   └── formatter.h
-├── hello_world_application
-│   ├── CMakeLists.txt
-│   └── hello_world.cpp
-├── preview.png
-├── solver_application
-│   ├── CMakeLists.txt
-│   └── equation.cpp
-└── solver_lib
-    ├── CMakeLists.txt
-    ├── solver.cpp
-    └── solver.h
+└── README.md
 ```
 
-Исходные каталоги `formatter_lib`, `formatter_ex_lib`, `hello_world_application`, `solver_lib` и `solver_application` не переносились и не переименовывались.
+## Проверка локальной сборки
 
-## 1. Библиотека formatter
-
-В каталог `formatter_lib` был добавлен файл `CMakeLists.txt`.
-
-```cmake
-cmake_minimum_required(VERSION 3.5)
-
-project(formatter)
-
-add_library(formatter STATIC
-    formatter.cpp
-)
-
-target_include_directories(formatter PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-```
-
-Создаётся статическая библиотека `formatter`.
-
-## 2. Библиотека formatter_ex
-
-В каталог `formatter_ex_lib` был добавлен файл `CMakeLists.txt`.
-
-```cmake
-cmake_minimum_required(VERSION 3.5)
-
-project(formatter_ex)
-
-add_library(formatter_ex STATIC
-    formatter_ex.cpp
-)
-
-target_include_directories(formatter_ex PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-target_link_libraries(formatter_ex
-    formatter
-)
-```
-
-Библиотека `formatter_ex` использует библиотеку `formatter`.
-
-## 3. Библиотека solver_lib
-
-В каталог `solver_lib` был добавлен файл `CMakeLists.txt`.
-
-```cmake
-cmake_minimum_required(VERSION 3.5)
-
-project(solver_lib)
-
-add_library(solver_lib STATIC
-    solver.cpp
-)
-
-target_include_directories(solver_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-```
-
-Создаётся статическая библиотека `solver_lib`.
-
-При сборке проекта современным компилятором GCC потребовалось подключить заголовочный файл `<cmath>` и использовать `std::sqrt` вместо `std::sqrtf`.
-
-Фрагмент `solver.cpp`:
-
-```cpp
-#include <cmath>
-#include "solver.h"
-
-#include <stdexcept>
-```
-
-Вычисление корней:
-
-```cpp
-x1 = (-b - std::sqrt(d)) / (2 * a);
-x2 = (-b + std::sqrt(d)) / (2 * a);
-```
-
-## 4. Приложение hello_world
-
-В каталог `hello_world_application` был добавлен `CMakeLists.txt`.
-
-```cmake
-cmake_minimum_required(VERSION 3.5)
-
-project(hello_world)
-
-add_executable(hello_world
-    hello_world.cpp
-)
-
-target_link_libraries(hello_world
-    formatter_ex
-)
-```
-
-Приложение `hello_world` связывается с библиотекой `formatter_ex`.
-
-## 5. Приложение solver
-
-В каталог `solver_application` был добавлен `CMakeLists.txt`.
-
-```cmake
-cmake_minimum_required(VERSION 3.5)
-
-project(solver)
-
-add_executable(solver
-    equation.cpp
-)
-
-target_link_libraries(solver
-    formatter_ex
-    solver_lib
-)
-```
-
-Приложение `solver` использует библиотеки `formatter_ex` и `solver_lib`.
-
-## 6. Корневой CMakeLists.txt
-
-Корневой файл `CMakeLists.txt`:
-
-```cmake
-cmake_minimum_required(VERSION 3.5)
-
-project(lab03)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-add_subdirectory(formatter_lib)
-add_subdirectory(formatter_ex_lib)
-add_subdirectory(solver_lib)
-add_subdirectory(hello_world_application)
-add_subdirectory(solver_application)
-```
-
-Таким образом, один корневой файл CMake подключает все библиотеки и приложения проекта.
-
-## 7. Конфигурация проекта
-
-Для сборки была создана отдельная директория `_build`.
-
-Команда:
+Для конфигурации проекта была выполнена команда:
 
 ```bash
-cmake -S . -B _build
+cmake -S . -B build
 ```
 
-Основная часть вывода:
-
-```text
--- The C compiler identification is GNU 15.2.0
--- The CXX compiler identification is GNU 15.2.0
--- Detecting C compiler ABI info - done
--- Detecting C compile features - done
--- Detecting CXX compiler ABI info - done
--- Detecting CXX compile features - done
--- Configuring done
--- Generating done
--- Build files have been written to: /home/nikita/lab03/_build
-```
-
-## 8. Сборка проекта
-
-Команда:
+После успешной конфигурации проект был собран:
 
 ```bash
-cmake --build _build
+cmake --build build
 ```
 
-Вывод:
+Результат сборки:
 
 ```text
-[ 10%] Building CXX object formatter_lib/CMakeFiles/formatter.dir/formatter.cpp.o
-[ 20%] Linking CXX static library libformatter.a
 [ 20%] Built target formatter
-[ 30%] Building CXX object formatter_ex_lib/CMakeFiles/formatter_ex.dir/formatter_ex.cpp.o
-[ 40%] Linking CXX static library libformatter_ex.a
 [ 40%] Built target formatter_ex
-[ 50%] Building CXX object solver_lib/CMakeFiles/solver_lib.dir/solver.cpp.o
-[ 60%] Linking CXX static library libsolver_lib.a
 [ 60%] Built target solver_lib
-[ 70%] Building CXX object hello_world_application/CMakeFiles/hello_world.dir/hello_world.cpp.o
-[ 80%] Linking CXX executable hello_world
 [ 80%] Built target hello_world
-[ 90%] Building CXX object solver_application/CMakeFiles/solver.dir/equation.cpp.o
-[100%] Linking CXX executable solver
 [100%] Built target solver
 ```
 
-Проект успешно собран.
+Таким образом, локальная сборка проекта завершилась успешно.
 
-## 9. Проверка hello_world
+## Настройка GitHub Actions
 
-Команда:
+Для автоматической сборки был создан один файл:
+
+```text
+.github/workflows/ci.yml
+```
+
+Для запуска нескольких вариантов сборки используется `matrix`.
+
+Конфигурация включает три варианта:
+
+```yaml
+matrix:
+  include:
+    - os: ubuntu-latest
+      compiler: g++
+      name: Linux GCC
+
+    - os: ubuntu-latest
+      compiler: clang++
+      name: Linux Clang
+
+    - os: windows-latest
+      compiler: cl
+      name: Windows MSVC
+```
+
+Полный файл конфигурации:
+
+```yaml
+name: Lab04 CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: g++
+            name: Linux GCC
+
+          - os: ubuntu-latest
+            compiler: clang++
+            name: Linux Clang
+
+          - os: windows-latest
+            compiler: cl
+            name: Windows MSVC
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Linux
+        if: runner.os != 'Windows'
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+
+      - name: Build Linux
+        if: runner.os != 'Windows'
+        run: cmake --build build
+
+      - name: Configure Windows
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build
+
+      - name: Build Windows
+        if: runner.os == 'Windows'
+        run: cmake --build build --config Release
+```
+
+## Отправка изменений в репозиторий
+
+Изменения были добавлены в Git:
 
 ```bash
-./_build/hello_world_application/hello_world
+git add -A
 ```
 
-Вывод:
-
-```text
--------------------------
-hello, world!
--------------------------
-```
-
-Приложение работает корректно.
-
-## 10. Проверка solver
-
-Команда:
+Создан коммит:
 
 ```bash
-./_build/solver_application/solver
+git commit -m "Fix lab04 project and add CI matrix"
 ```
 
-Для проверки были введены коэффициенты квадратного уравнения:
+Изменения отправлены в удалённый репозиторий:
+
+```bash
+git push origin master
+```
+
+После отправки изменений GitHub Actions автоматически запустил CI.
+
+## Результат CI
+
+Запуск GitHub Actions:
 
 ```text
-1
--3
-2
+Lab04 CI
+Run ID: 34829669152
 ```
 
-То есть решалось уравнение:
+Результаты:
 
 ```text
-x² - 3x + 2 = 0
+✓ Windows MSVC
+✓ Linux GCC
+✓ Linux Clang
 ```
 
-Полученный вывод:
+Все три сборки успешно завершены.
 
-```text
--------------------------
-x1 = 1.000000
--------------------------
--------------------------
-x2 = 2.000000
--------------------------
-```
+Ссылка на запуск GitHub Actions:
 
-Получены правильные корни `1` и `2`.
+https://github.com/Shohiii/lab04/actions/runs/34829669152
 
 ## Вывод
 
-В ходе лабораторной работы была изучена система сборки CMake. Для существующих библиотек и приложений были созданы отдельные файлы `CMakeLists.txt`, настроены зависимости между целями и создан общий корневой файл сборки.
+В ходе лабораторной работы была настроена система непрерывной интеграции GitHub Actions для проекта из лабораторной работы №3.
 
-Исходная структура проекта была сохранена. Проект успешно конфигурируется и собирается, приложения `hello_world` и `solver` запускаются и работают корректно.
+В одном файле конфигурации CI организованы три варианта автоматической сборки:
 
+* Linux GCC;
+* Linux Clang;
+* Windows MSVC.
+
+Все варианты сборки завершились успешно.
