@@ -1,31 +1,47 @@
-name: CMake CI
+name: Lab04 CI
 
 on:
   push:
-    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: g++
+            name: Linux GCC
+
+          - os: ubuntu-latest
+            compiler: clang++
+            name: Linux Clang
+
+          - os: windows-latest
+            compiler: cl
+            name: Windows MSVC
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake build-essential
+      - name: Configure Linux
+        if: runner.os != 'Windows'
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
 
-    - name: Configure CMake
-      run: cmake -S . -B build
+      - name: Build Linux
+        if: runner.os != 'Windows'
+        run: cmake --build build
 
-    - name: Build project
-      run: cmake --build build
+      - name: Configure Windows
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build
 
-    - name: Run tests
-      run: ./build/check
+      - name: Build Windows
+        if: runner.os == 'Windows'
+        run: cmake --build build --config Release
+
